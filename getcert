@@ -177,8 +177,12 @@ def _make_files(module):
     for key in ['certificate_file', 'key_file']:
         file_name = module.params[key]
         file_dir = os.path.dirname(file_name)
+        if not os.path.isdir(file_dir):
+            os.makedirs(file_dir, DIR_MODE)
+        if not os.path.isfile(file_name):
+            open(file_name, 'a').close()
         try:
-            cmd = 'semanage fcontext -a -t cert_t %s(/.*)' % file_dir
+            cmd = 'semanage fcontext -a -t cert_t "%s(/.*)"' % file_dir
             p = subprocess.call(cmd, shell=True, stdout=None, stderr=None,)
         except ValueError:
             pass
@@ -269,7 +273,7 @@ def _check_cert( db_type_nss, module, remove_if_mismatched = False):
     subject = module.params.get('subject')
     if subject is None:
         subject = module.params.get('kerberos_principal')
-    
+
     for line in p.stdout:
         fields = line.strip().split(':')
         try:
@@ -289,7 +293,7 @@ def _check_cert( db_type_nss, module, remove_if_mismatched = False):
                     return False
         except:
             print ('err')
-         
+
     return found
 
 def _remove_cert_by_nickname(module):
@@ -413,7 +417,7 @@ def run_module():
 
     if db_type_nss:
         if module.params.get('pin_file') is not None:
-            cmd = cmd + ' -p %(pin_file)s '        
+            cmd = cmd + ' -p %(pin_file)s '
         cmd = cmd + STORE_NSS
     else:
         cmd = cmd + STORE_OPENSSL
@@ -425,7 +429,7 @@ def run_module():
 
 
 
-        
+
     cmd = cmd % module.params
     result['changed'] = True
     result['command'] = cmd
